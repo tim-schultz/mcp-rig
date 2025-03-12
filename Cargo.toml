@@ -6,7 +6,7 @@ description = "Examples of integrating MCP servers with Rig using the mcp-rig cr
 publish = false
 
 [dependencies]
-mcp-client = { path = "../official-mcp-rs-sdk/crates/mcp-client" }
+mcp-client = "0.1.0"
 rig-core = "0.9.1"
 
 # Async runtime

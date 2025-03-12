@@ -764,13 +764,15 @@ dependencies = [
 
 [[package]]
 name = "mcp-client"
-version = "1.0.7"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8c7e00680bf6bd7430397536dd07ce9027aebb2854c2270b2da1f489bc20955b"
 dependencies = [
  "anyhow",
  "async-trait",
  "eventsource-client",
  "futures",
- "mcp-core",
+ "mcp-spec",
  "rand",
  "reqwest",
  "serde",
@@ -781,21 +783,6 @@ dependencies = [
  "tower-service",
  "tracing",
  "tracing-subscriber",
- "url",
-]
-
-[[package]]
-name = "mcp-core"
-version = "1.0.7"
-dependencies = [
- "anyhow",
- "async-trait",
- "base64",
- "chrono",
- "schemars",
- "serde",
- "serde_json",
- "thiserror",
  "url",
 ]
 
@@ -812,6 +799,23 @@ dependencies = [
  "tokio",
  "tracing",
  "tracing-subscriber",
+]
+
+[[package]]
+name = "mcp-spec"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a294f4fcf9c3a0b3d168937947ecb906feb691089dd9fbbefc9707c8a4557163"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "base64",
+ "chrono",
+ "schemars",
+ "serde",
+ "serde_json",
+ "thiserror",
+ "url",
 ]
 
 [[package]]
