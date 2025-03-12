@@ -106,8 +106,6 @@ pub struct ClientId(pub String);
 
 /// Implementation of Rig's `Tool` trait for MCP tools.
 impl Tool for McpToolAdapter {
-    // This is a placeholder that will be overridden by the actual tool name.
-    // Each tool adapter instance will use its own name from self.tool_name.
     const NAME: &'static str = "mcp_tool";
 
     /// The error type returned by this tool
@@ -119,49 +117,61 @@ impl Tool for McpToolAdapter {
     /// The output type returned by this tool
     type Output = Value;
 
-    /// Provides the definition of this tool to the Rig agent.
     async fn definition(&self, _prompt: String) -> ToolDefinition {
+        // The key is that we use the actual MCP tool name here
         ToolDefinition {
-            name: self.tool_name.clone(),
+            name: self.tool_name.clone(), // This is the MCP tool name
             description: self.tool_description.clone(),
             parameters: self.parameters.clone(),
         }
     }
 
-    /// Executes the tool with the given arguments.
+    // Override the name() method to return the dynamic tool name
+    fn name(&self) -> String {
+        self.tool_name.clone()
+    }
+
     async fn call(&self, args: Self::Args) -> Result<Self::Output, Self::Error> {
-        // Call the tool via the MCP client
-        let result = self
-            .mcp_client
-            .call_tool(&self.tool_name, args.args)
-            .await
-            .map_err(|e| McpRigIntegrationError::McpError(e.to_string()))?;
+        // Clone everything we need to move into the async block
+        let mcp_client = Arc::clone(&self.mcp_client);
+        let tool_name = self.tool_name.clone();
+        let args_value = args.args.clone();
+
+        // Use tokio::spawn but ensure the future is properly constructed
+        // We'll use a pattern that ensures the future is properly constrained
+        let result = tokio::task::spawn(async move {
+            // This code runs in a separate task
+            match mcp_client.call_tool(&tool_name, args_value).await {
+                Ok(result) => Ok(result),
+                Err(e) => Err(McpRigIntegrationError::McpError(e.to_string())),
+            }
+        })
+        .await // Wait for the spawned task to complete
+        .map_err(|e| McpRigIntegrationError::McpError(format!("Task join error: {}", e)))?; // Handle JoinError
+
+        // Now we've properly awaited the spawned task and have our result
+        // The `result` here is already a Result<CallToolResult, McpRigIntegrationError>
+        let tool_result = result?;
 
         // Handle errors from the tool execution
-        if result.is_error.unwrap_or(false) {
+        if tool_result.is_error.unwrap_or(false) {
             return Err(McpRigIntegrationError::ToolExecutionError(format!(
-                "MCP tool error: {}",
-                result.content
+                "MCP tool error: {:?}",
+                tool_result.content
             )));
         }
 
-        Ok(result.content)
+        Ok(serde_json::to_value(tool_result.content)?)
     }
 }
 
 /// Implementation of Rig's `ToolEmbedding` trait for MCP tools.
 impl ToolEmbedding for McpToolAdapter {
-    /// The error type that can occur during initialization
     type InitError = McpRigIntegrationError;
-
-    /// The context needed to recreate this tool (the MCP client ID)
     type Context = ClientId;
-
-    /// The serializable state of this tool
     type State = McpToolState;
-
     /// Initializes a new tool instance from state and context.
-    fn init(state: Self::State, context: Self::Context) -> Result<Self, Self::InitError> {
+    fn init(_state: Self::State, _context: Self::Context) -> Result<Self, Self::InitError> {
         // In a real implementation, you would use the ClientId to look up the actual client
         // from a registry or manager. This is a simplified example.
         Err(McpRigIntegrationError::InitError(

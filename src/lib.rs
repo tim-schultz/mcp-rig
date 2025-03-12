@@ -14,10 +14,7 @@
 //! - Enable semantic retrieval of tools based on natural language queries
 //! - Manage multiple MCP clients in a single application
 
-// Import specific types from rig
-use rig::agent::Agent;
-use rig::client::RigClient;
-use rig::vector_store::VectorStore;
+use rig::{agent::Agent, completion::CompletionModel, providers::openai::Client as RigClient};
 
 mod adapter;
 mod connection;
@@ -31,7 +28,6 @@ pub use toolset::{create_mcp_toolset, register_mcp_tools};
 
 // Re-export relevant dependencies for ease of use
 pub use mcp_client;
-pub use rig;
 
 // High-level integration function that sets up a Rig agent with MCP tools
 pub async fn setup_rig_with_mcp(
@@ -39,12 +35,16 @@ pub async fn setup_rig_with_mcp(
     rig_client: &RigClient,
     model: &str,
     preamble: &str,
-) -> Result<Agent, error::McpRigIntegrationError> {
-    // Create a basic agent builder
+) -> Result<Agent<impl CompletionModel>, error::McpRigIntegrationError> {
+    // Create the model and agent builder
     let mut agent_builder = rig_client.agent(model).preamble(preamble);
-
-    // Register static tools from MCP
-    register_mcp_tools(std::sync::Arc::clone(&mcp_client), &mut agent_builder).await?;
+    let model = rig_client.completion_model(model);
+    register_mcp_tools(
+        std::sync::Arc::clone(&mcp_client),
+        &mut agent_builder,
+        model,
+    )
+    .await?;
 
     // Build the agent
     let agent = agent_builder.build();
@@ -52,35 +52,37 @@ pub async fn setup_rig_with_mcp(
     Ok(agent)
 }
 
-// Variant that also adds dynamic RAG-enabled tools
-pub async fn setup_rig_with_mcp_rag(
-    mcp_client: std::sync::Arc<Box<dyn mcp_client::McpClientTrait>>,
-    rig_client: &RigClient,
-    model: &str,
-    embedding_model: &str,
-    preamble: &str,
-    max_dynamic_tools: usize,
-) -> Result<Agent, error::McpRigIntegrationError> {
-    // Create a basic agent builder
-    let mut agent_builder = rig_client.agent(model).preamble(preamble);
+// /// Variant that also adds dynamic RAG-enabled tools
+// pub async fn setup_rig_with_mcp_rag(
+//     mcp_client: std::sync::Arc<Box<dyn mcp_client::McpClientTrait>>,
+//     rig_client: &RigClient,
+//     model: &str,
+//     embedding_model: &str,
+//     preamble: &str,
+//     max_dynamic_tools: usize,
+// ) -> Result<Agent<impl CompletionModel>, error::McpRigIntegrationError> {
+//     // Create the model and agent builder
+//     let mut agent_builder = rig_client.agent(model).preamble(preamble);
+//     let model = rig_client.completion_model(model);
 
-    // For RAG-enabled dynamic tools
-    let toolset = create_mcp_toolset(std::sync::Arc::clone(&mcp_client)).await?;
+//     // For RAG-enabled dynamic tools
+//     let toolset = create_mcp_toolset(std::sync::Arc::clone(&mcp_client)).await?;
 
-    // Create a vector store for tool embeddings
-    let embedding_model = rig_client.embeddings_model(embedding_model);
-    let vector_store = VectorStore::new(embedding_model);
+//     // Create embedding store for tool embeddings
+//     let embedding_model = rig_client.embedding_model(embedding_model);
+//     let mut index = EmbeddingStore::new(embedding_model);
 
-    // Index the toolset in the vector store
-    let index = vector_store.index(toolset.clone()).await?;
+//     // TODO: ToolSet doesn't expose a way to iterate over tools yet
+//     // We'll need to add tools directly with the builder for now
+//     register_mcp_tools(
+//         std::sync::Arc::clone(&mcp_client),
+//         &mut agent_builder,
+//         model,
+//     )
+//     .await?;
 
-    // Add both static and dynamic tools
-    register_mcp_tools(std::sync::Arc::clone(&mcp_client), &mut agent_builder).await?;
+//     // Add dynamic tool retrieval to the agent
+//     let agent = agent_builder.build();
 
-    // Add dynamic tool retrieval to the agent
-    let agent = agent_builder
-        .dynamic_tools(max_dynamic_tools, index, toolset)
-        .build();
-
-    Ok(agent)
-}
+//     Ok(agent)
+// }

@@ -30,7 +30,7 @@ pub enum McpRigIntegrationError {
     /// These errors occur when interacting with Rig components, such as
     /// during agent creation, tool registration, or agent execution.
     #[error("Rig error: {0}")]
-    RigError(#[from] rig::Error),
+    RigError(String),
 
     /// Errors that occur during tool execution.
     ///

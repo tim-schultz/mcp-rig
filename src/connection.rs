@@ -29,7 +29,7 @@ use std::{collections::HashMap, sync::Arc, time::Duration};
 /// # Example
 ///
 /// ```rust,no_run
-/// use mcp_rig_integration::McpConnectionManager;
+/// use mcp_rig::McpConnectionManager;
 /// use mcp_client::client::ClientInfo;
 /// use std::collections::HashMap;
 ///
@@ -55,6 +55,7 @@ use std::{collections::HashMap, sync::Arc, time::Duration};
 /// # Ok(())
 /// # }
 /// ```
+#[derive(Default)]
 pub struct McpConnectionManager {
     /// Map of client ID to client instance
     clients: HashMap<String, Arc<Box<dyn McpClientTrait>>>,
@@ -135,7 +136,7 @@ impl McpConnectionManager {
             .map_err(|e| McpRigIntegrationError::McpError(e.to_string()))?;
 
         let service = McpService::with_timeout(handle, self.timeout);
-        let client = McpClient::new(service);
+        let mut client = McpClient::new(service);
 
         // Initialize the client
         let capabilities = ClientCapabilities::default();

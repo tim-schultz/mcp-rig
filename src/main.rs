@@ -4,8 +4,7 @@
 // the integration of MCP clients with Rig tools.
 
 use mcp_client::client::ClientInfo;
-use mcp_rig_integration::{setup_rig_with_mcp_rag, McpConnectionManager, McpRigIntegrationError};
-use rig_core::RigClient;
+use mcp_rig::McpConnectionManager;
 use std::collections::HashMap;
 use std::time::Duration;
 use tracing_subscriber::EnvFilter;
@@ -52,55 +51,55 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         )
         .await?;
 
-    // Initialize the Rig client
-    let rig_client = RigClient::new()?;
+    // // Initialize the Rig client
+    // let rig_client = RigClient::new()?;
 
-    // Create a Rig agent with MCP tools from the git client
-    let git_client = connection_manager
-        .get_client("git-client")
-        .ok_or("Git client not found")?;
+    // // Create a Rig agent with MCP tools from the git client
+    // let git_client = connection_manager
+    //     .get_client("git-client")
+    //     .ok_or("Git client not found")?;
 
-    let agent = setup_rig_with_mcp_rag(
-        git_client,
-        &rig_client,
-        "gpt-4-turbo",             // Model
-        "text-embedding-ada-002",  // Embedding model
-        "You are a helpful assistant with access to Git tools. You can help users manage their repositories.",
-        5,                         // Max dynamic tools
-    ).await?;
+    // let agent = setup_rig_with_mcp_rag(
+    //     git_client,
+    //     &rig_client,
+    //     "gpt-4-turbo",             // Model
+    //     "text-embedding-ada-002",  // Embedding model
+    //     "You are a helpful assistant with access to Git tools. You can help users manage their repositories.",
+    //     5,                         // Max dynamic tools
+    // ).await?;
 
-    // Run a conversation with the agent
-    println!("Starting conversation with the agent...");
+    // // Run a conversation with the agent
+    // println!("Starting conversation with the agent...");
 
-    let response = agent
-        .chat("Can you check the git status of the current repository?")
-        .await?;
-    println!("Agent response: {}", response);
+    // let response = agent
+    //     .chat("Can you check the git status of the current repository?")
+    //     .await?;
+    // println!("Agent response: {}", response);
 
-    let response = agent
-        .chat("What branches are available and which one am I on?")
-        .await?;
-    println!("Agent response: {}", response);
+    // let response = agent
+    //     .chat("What branches are available and which one am I on?")
+    //     .await?;
+    // println!("Agent response: {}", response);
 
-    // Now try with the echo client
-    let echo_client = connection_manager
-        .get_client("echo-client")
-        .ok_or("Echo client not found")?;
+    // // Now try with the echo client
+    // let echo_client = connection_manager
+    //     .get_client("echo-client")
+    //     .ok_or("Echo client not found")?;
 
-    let echo_agent = setup_rig_with_mcp_rag(
-        echo_client,
-        &rig_client,
-        "gpt-4-turbo",             // Model
-        "text-embedding-ada-002",  // Embedding model
-        "You are a helpful assistant with access to Echo tools. You can help users test message passing.",
-        3,                         // Max dynamic tools
-    ).await?;
+    // let echo_agent = setup_rig_with_mcp_rag(
+    //     echo_client,
+    //     &rig_client,
+    //     "gpt-4-turbo",             // Model
+    //     "text-embedding-ada-002",  // Embedding model
+    //     "You are a helpful assistant with access to Echo tools. You can help users test message passing.",
+    //     3,                         // Max dynamic tools
+    // ).await?;
 
-    // Run a conversation with the echo agent
-    let response = echo_agent
-        .chat("Can you echo a message back to me?")
-        .await?;
-    println!("Echo agent response: {}", response);
+    // // Run a conversation with the echo agent
+    // let response = echo_agent
+    //     .chat("Can you echo a message back to me?")
+    //     .await?;
+    // println!("Echo agent response: {}", response);
 
     Ok(())
 }

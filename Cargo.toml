@@ -2,15 +2,12 @@
 name = "mcp-rig"
 version = "0.1.0"
 edition = "2021"
-description = "Integration between MCP clients and Rig tools"
-license = "MIT OR Apache-2.0"
+description = "Examples of integrating MCP servers with Rig using the mcp-rig crate"
+publish = false
 
 [dependencies]
-# MCP client dependencies
 mcp-client = { path = "../official-mcp-rs-sdk/crates/mcp-client" }
-
-# Rig dependencies
-rig-core = { version = "0.9.1", features = ["all"] }
+rig-core = "0.9.1"
 
 # Async runtime
 tokio = { version = "1.32", features = ["full"] }
@@ -29,15 +26,6 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 # Random number generation (for examples)
 rand = { version = "0.8", features = ["std", "std_rng"] }
 
-[dev-dependencies]
-# For testing
-tokio-test = "0.4"
-mockall = "0.11"
-
 [[bin]]
-name = "mcp-rig-integration"
-path = "src/main.rs"
-
-[lib]
-name = "mcp_rig_integration"
-path = "src/lib.rs"
+name = "advanced-filesystem-example"
+path = "bin/advanced_filesystem_example.rs"
