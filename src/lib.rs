@@ -14,7 +14,7 @@
 //! - Enable semantic retrieval of tools based on natural language queries
 //! - Manage multiple MCP clients in a single application
 
-use rig::{agent::Agent, completion::CompletionModel, providers::openai::Client as RigClient};
+use rig::{agent::Agent, completion::CompletionModel};
 
 mod adapter;
 mod connection;
@@ -32,13 +32,9 @@ pub use mcp_client;
 // High-level integration function that sets up a Rig agent with MCP tools
 pub async fn setup_rig_with_mcp(
     mcp_client: std::sync::Arc<Box<dyn mcp_client::McpClientTrait>>,
-    rig_client: &RigClient,
-    model: &str,
-    preamble: &str,
+    mut agent_builder: rig::agent::AgentBuilder<rig::providers::openai::CompletionModel>,
+    model: rig::providers::openai::CompletionModel,
 ) -> Result<Agent<impl CompletionModel>, error::McpRigIntegrationError> {
-    // Create the model and agent builder
-    let mut agent_builder = rig_client.agent(model).preamble(preamble);
-    let model = rig_client.completion_model(model);
     register_mcp_tools(
         std::sync::Arc::clone(&mcp_client),
         &mut agent_builder,

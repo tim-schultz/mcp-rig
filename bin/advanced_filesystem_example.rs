@@ -1,12 +1,11 @@
 // advanced_filesystem_example.rs
 //
 // This example demonstrates a more advanced integration with the filesystem MCP server,
-// including file editing capabilities and a more interactive session.
+// using cli_chatbot to manage the message loop.
 
 use mcp_client::client::ClientInfo;
 use mcp_rig::{setup_rig_with_mcp, McpConnectionManager};
-use rig::completion::Chat;
-use rig::providers::gemini::Client as RigClient;
+use rig::providers::openai::Client as RigClient;
 use std::collections::HashMap;
 use std::env;
 use std::fs;
@@ -76,6 +75,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Initialize the Rig client
     let rig_client = RigClient::from_env();
+
+    // Create the model and agent builder
+    let agent_builder = rig_client.agent("gpt-4o").preamble("You are a helpful assistant with access to filesystem tools. You can help users explore and manipulate files and directories.
+
+When editing files, first use read_file to show the current content, then use edit_file with dryRun:true to preview changes before applying them.
+
+For file paths, use relative paths from the current working directory. For example, 'test_file.txt' not '/path/to/test_file.txt'.
+
+Always be cautious when modifying files and confirm important operations with the user.");
+    let model = rig_client.completion_model("o3-mini");
     println!("Rig client initialized");
 
     // Get the filesystem client
@@ -85,47 +94,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Set up the Rig agent with detailed instructions
     println!("Setting up Rig agent with filesystem MCP tools");
-    let agent = setup_rig_with_mcp(
-        filesystem_client,
-        &rig_client,
-        "o3-mini", // Use a more capable model for complex tasks
-        "You are a helpful assistant with access to filesystem tools. You can help users explore and manipulate files and directories.
-
-When editing files, first use read_file to show the current content, then use edit_file with dryRun:true to preview changes before applying them.
-
-For file paths, use relative paths from the current working directory. For example, 'test_file.txt' not '/path/to/test_file.txt'.
-
-Always be cautious when modifying files and confirm important operations with the user.",
-    )
-    .await?;
+    let agent = setup_rig_with_mcp(filesystem_client, agent_builder, model).await?;
 
     println!("Rig agent setup complete. Starting interactive session...");
     println!("\n--- Interactive Session ---\n");
     println!("Type your questions or commands about the filesystem. Type 'exit' to quit.");
 
-    // Interactive session
-    let stdin = io::stdin();
-    let mut reader = io::BufReader::new(stdin).lines();
-
-    loop {
-        print!("\nYOU: ");
-        io::stdout().flush().await?;
-
-        let line = match reader.next_line().await {
-            Ok(Some(line)) => line,
-            Ok(None) => break,
-            Err(_) => break,
-        };
-
-        if line.trim().to_lowercase() == "exit" {
-            println!("Exiting...");
-            break;
-        }
-
-        println!("AGENT: (thinking...)");
-        let response = agent.chat(line, vec![]).await?;
-        println!("AGENT: {}", response);
-    }
+    // Use cli_chatbot to manage the message loop
+    rig::cli_chatbot::cli_chatbot(agent).await?;
 
     println!("\n--- Session ended ---");
 
